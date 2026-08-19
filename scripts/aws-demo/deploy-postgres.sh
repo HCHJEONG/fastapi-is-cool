@@ -18,7 +18,7 @@ TARGET_ENV="${TARGET_ENV:-aws-demo}"
 TARGET_HOST="${AWS_DEMO_HOST:-aws-demo}"
 
 SERVICE_NAME="fastapi-is-cool"
-POSTGRES_IMAGE="postgres:16"
+POSTGRES_IMAGE="pgvector/pgvector:pg16"
 POSTGRES_CONTAINER="${SERVICE_NAME}-postgres"
 DOCKER_NETWORK="${SERVICE_NAME}-net"
 

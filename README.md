@@ -9,6 +9,7 @@
 - FastAPI 앱 skeleton 생성
 - PostgreSQL 기반 baseline DB 준비
 - Alembic migration 실행
+- pgvector extension을 포함한 DB schema 요구사항 적용
 - seed 데이터 입력
 - Docker image build/export
 - dev-demo 또는 aws-demo에 app container 배포
@@ -17,6 +18,12 @@
 초기 API와 `content_snippets` 테이블은 실제 도메인 모델이라기보다
 배포 경로 검증용 baseline입니다. 이 baseline이 동작하는 것을 확인한
 뒤, 원하는 DB schema, migration, service, API route를 추가하면 됩니다.
+
+PostgreSQL 컨테이너는 pgvector를 사용할 수 있도록 `pgvector/pgvector:pg16`
+이미지를 사용합니다. `vector` extension 활성화는 별도 수동 스크립트가
+아니라 Alembic migration 안의 `CREATE EXTENSION IF NOT EXISTS vector`로
+관리합니다. 따라서 DB schema 요구사항은 migration 이력에 남고, 실행
+순서는 기존처럼 PostgreSQL 배포 후 `alembic.sh upgrade`를 실행하면 됩니다.
 
 ## 사전 준비
 

@@ -24,7 +24,7 @@ TARGET_HOST="${DEV_DEMO_HOST:-yoga}"
 DEV_DEMO_LAN_IP="${DEV_DEMO_LAN_IP:-192.168.0.104}"
 
 SERVICE_NAME="fastapi-is-cool"
-POSTGRES_IMAGE="postgres:16"
+POSTGRES_IMAGE="pgvector/pgvector:pg16"
 POSTGRES_CONTAINER="${SERVICE_NAME}-postgres-dev"
 DOCKER_NETWORK="${SERVICE_NAME}-dev-net"
 

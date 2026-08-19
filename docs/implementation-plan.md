@@ -172,6 +172,9 @@
 - Use FastAPI and Uvicorn for the API runtime.
 - Use Pydantic Settings for environment-driven configuration.
 - Use PostgreSQL as the default database.
+- Use a PostgreSQL image that includes pgvector support.
+- Manage `CREATE EXTENSION IF NOT EXISTS vector` through Alembic migrations,
+  not through a separate pgvector setup script.
 - Use SQLAlchemy async as the default ORM/database layer.
 - Use asyncpg as the PostgreSQL driver.
 - Use Alembic for database migrations.

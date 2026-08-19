@@ -15,6 +15,66 @@
 - Prefer explicit script names or target wrappers so the deployment destination
   is visible before execution.
 
+## Local Build Clone
+
+- Docker images are built from a separate local clone, not from this primary
+  working tree.
+- The local build clone root is `J:\deploy_remote_repo`.
+- Shell scripts running from WSL should refer to that path as
+  `/mnt/j/deploy_remote_repo`.
+- App deployment scripts may create, update, or reuse a repository clone under
+  that build root.
+- The build clone should use `git clone` for first setup and `git pull` or an
+  equivalent explicit update for later builds.
+- The build clone is for image creation and packaging only; runtime env files
+  and credentials must not be copied into it.
+
+## Manual Execution Order
+
+- Run local bootstrap first when setting up a working clone:
+  - `scripts/bootstrap/setup-local-venv.sh`
+- Prepare target environment files before creating PostgreSQL:
+  - `scripts/aws-demo/setup-env.sh`
+  - `scripts/dev-demo/setup-env.sh`
+- Deploy or start PostgreSQL after target env files exist:
+  - `scripts/aws-demo/deploy-postgres.sh`
+  - `scripts/dev-demo/deploy-postgres.sh`
+- Deploy the FastAPI/Uvicorn app after PostgreSQL is ready:
+  - `scripts/aws-demo/deploy-app.sh`
+  - `scripts/dev-demo/deploy-app.sh`
+- Run backup, restore, or reset scripts only as explicit database operations.
+
+## App Deployment Script Responsibilities
+
+- Keep `scripts/aws-demo/deploy-app.sh` and
+  `scripts/dev-demo/deploy-app.sh` empty until the app skeleton, Dockerfile,
+  health endpoint, and image tag strategy are decided.
+- Future app deployment scripts should require an already-built local image
+  tarball.
+- Future app deployment scripts should transfer that tarball to the target
+  host.
+- Future app deployment scripts should run `docker load` on the target host.
+- Future app deployment scripts should require the target `app.env` file to
+  exist before running the container.
+- Future app deployment scripts should ensure the target Docker network exists.
+- Future app deployment scripts should stop and remove only the FastAPI/Uvicorn
+  app container.
+- Future app deployment scripts should start the new app container attached to
+  the existing target Docker network.
+- Future app deployment scripts should verify a health or readiness endpoint.
+
+## App Deployment Script Boundaries
+
+- App deployment scripts must not build Docker images on `aws-demo` or
+  `dev-demo`.
+- App deployment scripts must not build Docker images from the primary working
+  tree.
+- App deployment scripts must not generate production-like secrets.
+- App deployment scripts must not stop, remove, recreate, reset, or migrate the
+  PostgreSQL container unless a future migration step is explicitly designed
+  and documented.
+- App deployment scripts must not delete database data directories or env files.
+
 ## Python And Dependency Management
 
 - Use Python 3.12.
@@ -69,6 +129,11 @@
   deployment.
 - Use a dedicated root-level host directory for PostgreSQL data.
 - Use remote-only env files or mounted secret files.
+- `aws-demo/setup-env.sh` prepares directories and example env files, but does
+  not generate production-like secrets.
+- `aws-demo` env files must be created or edited manually on the remote host.
+- Do not publish the PostgreSQL host port on `aws-demo`; app containers should
+  reach PostgreSQL through the Docker network.
 - App redeploy scripts must not stop, remove, or recreate the PostgreSQL
   container.
 - Database backup and restore should be handled by explicit database scripts.
@@ -77,6 +142,14 @@
 
 - The `dev-demo` PostgreSQL container should use its own data directories,
   env files, volumes, container names, and Docker network names.
+- `dev-demo` currently maps to the SSH alias `yoga`, which resolves to
+  `hchjeong@192.168.0.104` on the trusted LAN.
+- Unlike `aws-demo`, `dev-demo` exposes PostgreSQL to the trusted LAN for local
+  development tools and sibling development machines.
+- Bind PostgreSQL to the known LAN IP, `192.168.0.104`, rather than `0.0.0.0`
+  when possible.
+- `dev-demo/setup-env.sh` may create development-only env files and generated
+  database passwords, while preserving existing files.
 - `dev-demo` may support development-only reset or recreate scripts.
 - `dev-demo` scripts must never reference `aws-demo` credentials, directories,
   volumes, or SSH host aliases.
@@ -85,9 +158,12 @@
 
 ## Initial Script Shape
 
-- `deploy-app-aws-demo.sh`
-- `deploy-app-dev-demo.sh`
-- `deploy-postgres-aws-demo.sh`
-- `deploy-postgres-dev-demo.sh`
-- `backup-postgres-aws-demo.sh`
-- `reset-postgres-dev-demo.sh`
+- `scripts/bootstrap/setup-local-venv.sh`
+- `scripts/aws-demo/setup-env.sh`
+- `scripts/aws-demo/deploy-postgres.sh`
+- `scripts/aws-demo/deploy-app.sh`
+- `scripts/aws-demo/backup-postgres.sh`
+- `scripts/dev-demo/setup-env.sh`
+- `scripts/dev-demo/deploy-postgres.sh`
+- `scripts/dev-demo/deploy-app.sh`
+- `scripts/dev-demo/reset-postgres.sh`

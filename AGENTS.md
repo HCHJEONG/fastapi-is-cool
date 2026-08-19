@@ -48,6 +48,9 @@ development server target is reachable through the SSH host alias `dev-demo`.
 - Do not build Docker images from this repository working tree.
 - For Docker builds, clone the repository into a separate build location and
   build from that clean clone.
+- The local build clone root is `J:\deploy_remote_repo`.
+- Shell scripts running from WSL should refer to that build clone root as
+  `/mnt/j/deploy_remote_repo`.
 - A separate local clone may also be used as a development server workspace.
 - A PostgreSQL container may run beside that separate local clone for local
   development, but it must be treated as a development database only.
@@ -58,6 +61,7 @@ development server target is reachable through the SSH host alias `dev-demo`.
   shell scripts.
 - Keep deployment scripts target-specific. Use separate scripts for `aws-demo`
   and `dev-demo`, or separate target wrappers around shared conservative logic.
+- Prepare target env files before deploying PostgreSQL or the app.
 - The FastAPI/Uvicorn container and the PostgreSQL container must have separate
   lifecycles. Frequent application redeploys must not recreate or reset the
   database container.
@@ -80,16 +84,25 @@ development server target is reachable through the SSH host alias `dev-demo`.
 - Mount required runtime files or directories into containers at run time.
 - Keep `aws-demo` PostgreSQL data in a dedicated host directory and manage it
   independently from app image replacement.
+- `aws-demo` env setup scripts may create directories and template files, but
+  must not generate or overwrite production-like secrets.
+- `dev-demo` env setup scripts may generate development-only credentials, but
+  must preserve existing env files.
 
 ## Operational Assumptions
 
 - The production-like target is the `aws-demo` instance.
 - The development server target is the `dev-demo` instance.
+- `dev-demo` currently maps to the SSH alias `yoga` on the trusted LAN at
+  `hchjeong@192.168.0.104`.
 - The sibling applications and this backend may communicate through Docker
   networking or explicit host/port configuration, depending on deployment
   scripts.
 - The local development PostgreSQL instance, if used, is not authoritative and
   must not be confused with the `aws-demo` PostgreSQL instance.
+- `aws-demo` PostgreSQL should not publish a host port by default.
+- `dev-demo` PostgreSQL may publish `192.168.0.104:5432` for trusted LAN
+  development access.
 - PostgreSQL should normally use an official Docker image and persistent host
   volumes, while the FastAPI/Uvicorn image is built from this codebase.
 - Scripts should make paths, image names, container names, ports, volumes, and
@@ -106,5 +119,9 @@ development server target is reachable through the SSH host alias `dev-demo`.
   remote-run workflow.
 - App deployment scripts must not stop, remove, or recreate PostgreSQL unless
   the script is explicitly dedicated to database administration.
+- Leave app deployment scripts minimal until the app skeleton, Dockerfile,
+  health endpoint, and image tag strategy are decided.
+- Future app deployment scripts should consume a prebuilt local image tarball,
+  load it on the target host, replace only the app container, and verify health.
 - Clearly encode the target host in script names or target config files to
   reduce accidental cross-environment deployment.

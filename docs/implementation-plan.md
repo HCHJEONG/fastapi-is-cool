@@ -15,6 +15,17 @@
 - Prefer explicit script names or target wrappers so the deployment destination
   is visible before execution.
 
+## Python And Dependency Management
+
+- Use Python 3.12.
+- Use `uv` for dependency and virtual environment management.
+- Local development uses a repository-local `.venv`.
+- Commit `pyproject.toml` and `uv.lock`.
+- Docker images install dependencies from `uv.lock` into the container
+  environment.
+- Runtime hosts such as `aws-demo` and `dev-demo` should not manage Python
+  dependencies directly.
+
 ## Local Development Database
 
 - A separate local clone may be used as the development server workspace.

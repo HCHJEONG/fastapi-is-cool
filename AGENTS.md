@@ -20,6 +20,12 @@ development server target is reachable through the SSH host alias `dev-demo`.
 - Keep runtime configuration external to the image.
 - Treat local development, local Docker image creation, and remote deployment
   as separate steps.
+- Use Python 3.12 and `uv`.
+- Local development uses a repository-local `.venv`.
+- Docker images install dependencies from `uv.lock` into the container
+  environment.
+- Runtime hosts such as `aws-demo` and `dev-demo` should not manage Python
+  dependencies directly.
 
 ## Deployment Rules
 

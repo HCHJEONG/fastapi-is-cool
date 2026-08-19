@@ -2,56 +2,16 @@
 set -eu
 
 ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
-INCLUDE_DB=""
 
 usage() {
-  echo "Usage: $0 [--yes] [--no-db]"
+  echo "Usage: $0"
   echo
-  echo "Creates the initial FastAPI app skeleton without overwriting existing files."
-  echo
-  echo "Options:"
-  echo "  --yes    Use default choices."
-  echo "  --no-db  Skip SQLAlchemy settings/session/model/schema/service files."
-}
-
-prompt_yes_no() {
-  prompt="$1"
-  default="$2"
-
-  if [ ! -t 0 ]; then
-    echo "$default"
-    return 0
-  fi
-
-  while :; do
-    printf "%s [%s]: " "$prompt" "$default" >&2
-    read -r answer
-    answer="${answer:-$default}"
-
-    case "$answer" in
-      y|Y|yes|YES)
-        echo "yes"
-        return 0
-        ;;
-      n|N|no|NO)
-        echo "no"
-        return 0
-        ;;
-      *)
-        echo "Please answer yes or no." >&2
-        ;;
-    esac
-  done
+  echo "Creates the baseline FastAPI app skeleton without overwriting existing files."
+  echo "The baseline includes PostgreSQL, SQLAlchemy async, Alembic, and seed code."
 }
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --yes)
-      INCLUDE_DB="yes"
-      ;;
-    --no-db)
-      INCLUDE_DB="no"
-      ;;
     -h|--help)
       usage
       exit 0
@@ -64,10 +24,6 @@ while [ "$#" -gt 0 ]; do
 
   shift
 done
-
-if [ -z "$INCLUDE_DB" ]; then
-  INCLUDE_DB="$(prompt_yes_no "Include SQLAlchemy async DB scaffold?" "yes")"
-fi
 
 create_dir() {
   mkdir -p "$ROOT_DIR/$1"
@@ -94,16 +50,13 @@ create_dir "app/api"
 create_dir "app/api/v1"
 create_dir "app/core"
 create_dir "tests"
-
-if [ "$INCLUDE_DB" = "yes" ]; then
-  create_dir "alembic"
-  create_dir "alembic/versions"
-  create_dir "app/db"
-  create_dir "app/models"
-  create_dir "app/schemas"
-  create_dir "app/seeds"
-  create_dir "app/services"
-fi
+create_dir "alembic"
+create_dir "alembic/versions"
+create_dir "app/db"
+create_dir "app/models"
+create_dir "app/schemas"
+create_dir "app/seeds"
+create_dir "app/services"
 
 create_file_once "app/__init__.py" <<'EOF'
 EOF
@@ -111,11 +64,13 @@ EOF
 create_file_once "app/main.py" <<'EOF'
 from fastapi import FastAPI
 
+from app.api.health import router as health_router
 from app.api.router import api_router
 
 
 def create_app() -> FastAPI:
     app = FastAPI(title="fastapi-is-cool")
+    app.include_router(health_router)
     app.include_router(api_router)
     return app
 
@@ -135,20 +90,7 @@ api_router = APIRouter()
 api_router.include_router(api_v1_router, prefix="/api/v1")
 EOF
 
-create_file_once "app/api/v1/__init__.py" <<'EOF'
-EOF
-
-create_file_once "app/api/v1/router.py" <<'EOF'
-from fastapi import APIRouter
-
-from app.api.v1 import health, snippets
-
-api_v1_router = APIRouter()
-api_v1_router.include_router(health.router)
-api_v1_router.include_router(snippets.router, prefix="/snippets", tags=["snippets"])
-EOF
-
-create_file_once "app/api/v1/health.py" <<'EOF'
+create_file_once "app/api/health.py" <<'EOF'
 from fastapi import APIRouter
 
 router = APIRouter(tags=["health"])
@@ -159,18 +101,39 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 EOF
 
+create_file_once "app/api/v1/__init__.py" <<'EOF'
+EOF
+
+create_file_once "app/api/v1/router.py" <<'EOF'
+from fastapi import APIRouter
+
+from app.api.v1 import snippets
+
+api_v1_router = APIRouter()
+api_v1_router.include_router(snippets.router, prefix="/snippets", tags=["snippets"])
+EOF
+
 create_file_once "app/api/v1/snippets.py" <<'EOF'
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.session import get_db_session
+from app.schemas.snippets import ContentSnippetRead
+from app.services.snippets import get_content_snippet_by_key
 
 router = APIRouter()
 
 
-@router.get("/{key}")
-async def get_snippet(key: str) -> dict[str, str]:
-    raise HTTPException(
-        status_code=501,
-        detail="Snippet lookup is not implemented yet.",
-    )
+@router.get("/{key}", response_model=ContentSnippetRead)
+async def get_snippet(
+    key: str,
+    session: AsyncSession = Depends(get_db_session),
+) -> ContentSnippetRead:
+    snippet = await get_content_snippet_by_key(session, key)
+    if snippet is None:
+        raise HTTPException(status_code=404, detail="Snippet not found.")
+
+    return ContentSnippetRead.model_validate(snippet)
 EOF
 
 create_file_once "app/core/__init__.py" <<'EOF'
@@ -195,7 +158,6 @@ def get_settings() -> Settings:
     return Settings()
 EOF
 
-if [ "$INCLUDE_DB" = "yes" ]; then
 create_file_once "alembic.ini" <<'EOF'
 [alembic]
 script_location = alembic
@@ -512,7 +474,6 @@ async def get_content_snippet_by_key(
     )
     return result.scalar_one_or_none()
 EOF
-fi
 
 create_file_once "tests/test_health.py" <<'EOF'
 from httpx import ASGITransport, AsyncClient
@@ -524,7 +485,7 @@ async def test_health() -> None:
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/api/v1/health")
+        response = await client.get("/health")
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}

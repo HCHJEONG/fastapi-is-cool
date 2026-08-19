@@ -48,7 +48,7 @@ chmod 700 "\$REMOTE_ENV_DIR"
 
 if [ ! -f "\$REMOTE_POSTGRES_ENV_FILE" ]; then
   umask 077
-  POSTGRES_PASSWORD="\$(openssl rand -base64 32 | tr -d '\n')"
+  POSTGRES_PASSWORD="\$(openssl rand -hex 32 | tr -d '\n')"
 
   cat > "\$REMOTE_POSTGRES_ENV_FILE" <<ENVEOF
 POSTGRES_DB=fastapi_is_cool

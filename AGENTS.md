@@ -3,6 +3,14 @@
 This repository is for a shared backend server implemented with FastAPI and
 Uvicorn.
 
+The repository should also work as a repeatable backend baseline generator and
+manual deployment runbook. A fresh clone should be able to run the shell
+scripts in order, create the baseline FastAPI app, prepare `dev-demo`, validate
+the app through Docker, and then use the same conservative pattern for
+`aws-demo`. The initial schema and snippet API are deployment verification
+fixtures; users can add their own domain schema and APIs after the baseline is
+working.
+
 The backend is intended to be used by sibling repositories, including:
 
 - `global-ai-pricing`
@@ -22,6 +30,7 @@ development server target is reachable through the SSH host alias `dev-demo`.
   as separate steps.
 - Use Python 3.12 and `uv`.
 - Local development uses a repository-local `.venv`.
+- The default local workflow does not require a local database.
 - Docker images install dependencies from `uv.lock` into the container
   environment.
 - Runtime hosts such as `aws-demo` and `dev-demo` should not manage Python

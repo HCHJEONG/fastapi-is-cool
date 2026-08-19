@@ -1,5 +1,19 @@
 # Implementation Plan
 
+## Repository Purpose
+
+- This repository is a repeatable FastAPI backend baseline generator and manual
+  deployment runbook.
+- A fresh clone should be able to run the shell scripts in order and reach a
+  working backend on the internal development server and, after verification,
+  the production-like `aws-demo` target.
+- The initial app skeleton is intentionally small. Its baseline endpoints and
+  content snippet table prove that FastAPI, environment configuration, async
+  SQLAlchemy, Alembic, PostgreSQL, Docker networking, and deployment scripts are
+  wired correctly.
+- After this baseline works, users should add their own domain schemas,
+  migrations, services, and API routes.
+
 ## Deployment Model
 
 - Manage two Docker containers from this repository:
@@ -34,15 +48,21 @@
 - Run local bootstrap scripts first when setting up a working clone:
   - `scripts/bootstrap/setup-local-venv.sh`
   - `scripts/bootstrap/create-app-skeleton.sh`
+- Local bootstrap prepares source files and Python tooling only. It does not
+  require or create a local database.
 - Prepare target environment files before creating PostgreSQL:
   - `scripts/dev-demo/setup-env.sh`
   - `scripts/aws-demo/setup-env.sh`
 - Deploy or start PostgreSQL after target env files exist:
   - `scripts/dev-demo/deploy-postgres.sh`
   - `scripts/aws-demo/deploy-postgres.sh`
+- Run migrations and seed data against `dev-demo` after its PostgreSQL
+  container is ready:
+  - `scripts/dev-demo/alembic.sh upgrade`
+  - `scripts/dev-demo/seed-content-snippets.sh`
 - Create the Dockerfile and app deployment behavior after the app skeleton,
-  migration, seed, health endpoint, snippet endpoint, and image tag strategy are
-  decided.
+  health endpoint, snippet endpoint, migration/seed behavior, and image tag
+  strategy are decided.
 - Build the app image locally from the separate build clone, export it as a
   tarball, then deploy to `dev-demo` first:
   - `scripts/dev-demo/deploy-app.sh`
@@ -124,8 +144,8 @@
 
 ## Local Development Database
 
-- Local scripts may prepare source files, run migrations, or seed data against a
-  configured development database.
+- The default local path does not use a database.
+- Local scripts prepare source files, dependency metadata, and test scaffolding.
 - Do not run a persistent local Uvicorn server as the normal validation path.
 - Use `dev-demo` as the development server target and validate the app through
   its Docker container.
@@ -133,6 +153,18 @@
   development infrastructure when explicitly needed.
 - Local PostgreSQL data must live outside this repository, and local
   credentials or env files must not be committed or included in Docker images.
+
+## Baseline API And Database
+
+- `GET /health` is the canonical health endpoint.
+- Health checks are infrastructure-facing and should stay outside versioned API
+  prefixes.
+- `GET /api/v1/snippets/{key}` is the baseline content endpoint used to prove
+  that the app container can read seeded data from PostgreSQL.
+- The initial `content_snippets` table is a deployment verification fixture, not
+  a final domain model.
+- Users should add real domain tables, migrations, service functions, schemas,
+  and routes after the baseline deploy succeeds.
 
 ## Remote Database On aws-demo
 
@@ -171,10 +203,10 @@
 
 - `scripts/bootstrap/setup-local-venv.sh`
 - `scripts/bootstrap/create-app-skeleton.sh`
-- `scripts/local/alembic.sh`
-- `scripts/local/seed-content-snippets.sh`
 - `scripts/dev-demo/setup-env.sh`
 - `scripts/dev-demo/deploy-postgres.sh`
+- `scripts/dev-demo/alembic.sh`
+- `scripts/dev-demo/seed-content-snippets.sh`
 - `scripts/dev-demo/deploy-app.sh`
 - `scripts/aws-demo/setup-env.sh`
 - `scripts/aws-demo/deploy-postgres.sh`

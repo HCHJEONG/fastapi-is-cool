@@ -41,3 +41,10 @@ DATABASE_URL="postgresql+asyncpg://fastapi_is_cool:${POSTGRES_PASSWORD}@${DEV_DE
 export DATABASE_URL
 
 uv run python -m app.seeds.content_snippets
+
+echo
+echo "Next step:"
+echo "  scripts/build/build-image-tar.sh"
+echo
+echo "After the image tarball is built, deploy to dev-demo if you are on the trusted LAN."
+echo "If you are outside the trusted LAN, you may skip scripts/dev-demo/deploy-app.sh and continue with scripts/aws-demo/setup-env.sh."

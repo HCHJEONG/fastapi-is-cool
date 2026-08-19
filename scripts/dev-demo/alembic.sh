@@ -81,3 +81,9 @@ case "$command" in
     exit 2
     ;;
 esac
+
+if [ "$command" = "upgrade" ]; then
+  echo
+  echo "Next step:"
+  echo "  scripts/dev-demo/seed-content-snippets.sh"
+fi

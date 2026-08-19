@@ -36,6 +36,11 @@
 - The local build clone root is `J:\deploy_remote_repo`.
 - Shell scripts running from WSL should refer to that path as
   `/mnt/j/deploy_remote_repo`.
+- The build clone root is user-local configuration. Store overrides in
+  `scripts/env/dev-demo.env`, `scripts/env/aws-demo.env`, or the corresponding
+  example-derived local env files:
+  - `BUILD_CLONE_ROOT_WINDOWS=J:\\deploy_remote_repo`
+  - `BUILD_CLONE_ROOT_WSL=/mnt/j/deploy_remote_repo`
 - App deployment scripts may create, update, or reuse a repository clone under
   that build root.
 - The build clone should use `git clone` for first setup and `git pull` or an
@@ -47,11 +52,18 @@
 
 - Check local and remote prerequisites before running setup:
   - `scripts/check-prereqs.sh`
+- Each script should print the next script to run when it completes
+  successfully, so a new operator can follow the sequence without reopening
+  this plan after every step.
 - Run local bootstrap scripts first when setting up a working clone:
   - `scripts/bootstrap/setup-local-venv.sh`
   - `scripts/bootstrap/create-app-skeleton.sh`
 - Local bootstrap prepares source files and Python tooling only. It does not
   require or create a local database.
+- Commit and push generated baseline files before building an image from the
+  clean clone. The bootstrap scripts print this reminder, and
+  `scripts/build/build-image-tar.sh` refuses to run with uncommitted or
+  unpushed source changes.
 - Prepare target environment files before creating PostgreSQL:
   - `scripts/dev-demo/setup-env.sh`
   - `scripts/aws-demo/setup-env.sh`
@@ -68,19 +80,27 @@
   endpoint, migration/seed behavior, and image tag strategy are decided.
 - Build the app image locally from the separate build clone, export it as a
   tarball, then deploy to `dev-demo` first:
+  - `scripts/build/build-image-tar.sh`
   - `scripts/dev-demo/deploy-app.sh`
+- When deploying from outside the trusted LAN, operators may skip
+  `scripts/dev-demo/deploy-app.sh` after the image tarball is built and proceed
+  directly to `scripts/aws-demo/setup-env.sh`.
 - Verify the app on `dev-demo` through the deployed Docker container:
   - `GET /health`
   - `GET /api/v1/snippets/{key}`
 - Deploy to `aws-demo` only after `dev-demo` verification succeeds:
+  - `scripts/aws-demo/alembic.sh upgrade`
+  - `scripts/aws-demo/seed-content-snippets.sh`
   - `scripts/aws-demo/deploy-app.sh`
 - Run backup, restore, or reset scripts only as explicit database operations.
 
 ## App Deployment Script Responsibilities
 
-- Keep `scripts/aws-demo/deploy-app.sh` and
-  `scripts/dev-demo/deploy-app.sh` empty until the app skeleton, health
-  endpoint, snippet endpoint, and image tag strategy are decided.
+- `scripts/dev-demo/deploy-app.sh` should deploy a prebuilt image tarball,
+  replace only the dev app container, verify `/health`, and print curl commands.
+- `scripts/aws-demo/deploy-app.sh` should deploy a prebuilt image tarball with
+  sudo Docker, replace only the aws app container, verify `/health`, and print
+  curl commands.
 - Future app deployment scripts should require an already-built local image
   tarball.
 - Future app deployment scripts should transfer that tarball to the target
@@ -94,6 +114,8 @@
 - Future app deployment scripts should start the new app container attached to
   the existing target Docker network.
 - Future app deployment scripts should verify a health or readiness endpoint.
+- Successful app deployment scripts should print follow-up `curl` commands for
+  `/health` and `/api/v1/snippets/home.hero`.
 
 ## App Deployment Script Boundaries
 
@@ -233,6 +255,7 @@
 - `scripts/env/aws-demo.local.env.example`
 - `Dockerfile`
 - `.dockerignore`
+- `scripts/build/build-image-tar.sh`
 - `scripts/bootstrap/setup-local-venv.sh`
 - `scripts/bootstrap/create-app-skeleton.sh`
 - `scripts/dev-demo/setup-env.sh`
@@ -242,4 +265,6 @@
 - `scripts/dev-demo/deploy-app.sh`
 - `scripts/aws-demo/setup-env.sh`
 - `scripts/aws-demo/deploy-postgres.sh`
+- `scripts/aws-demo/alembic.sh`
+- `scripts/aws-demo/seed-content-snippets.sh`
 - `scripts/aws-demo/deploy-app.sh`

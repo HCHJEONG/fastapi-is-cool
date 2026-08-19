@@ -138,3 +138,7 @@ done
 echo "PostgreSQL did not become ready in time."
 exit 1
 EOF
+
+echo
+echo "Next step:"
+echo "  scripts/aws-demo/alembic.sh upgrade"

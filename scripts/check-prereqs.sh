@@ -5,6 +5,7 @@ ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 DEV_DEMO_HOST_OVERRIDE="${DEV_DEMO_HOST-}"
 AWS_DEMO_HOST_OVERRIDE="${AWS_DEMO_HOST-}"
 DEV_DEMO_LAN_IP_OVERRIDE="${DEV_DEMO_LAN_IP-}"
+BUILD_CLONE_ROOT_WSL_OVERRIDE="${BUILD_CLONE_ROOT_WSL-}"
 
 if [ -f "$ROOT_DIR/scripts/env/dev-demo.env" ]; then
   . "$ROOT_DIR/scripts/env/dev-demo.env"
@@ -30,9 +31,14 @@ if [ -n "$DEV_DEMO_LAN_IP_OVERRIDE" ]; then
   DEV_DEMO_LAN_IP="$DEV_DEMO_LAN_IP_OVERRIDE"
 fi
 
+if [ -n "$BUILD_CLONE_ROOT_WSL_OVERRIDE" ]; then
+  BUILD_CLONE_ROOT_WSL="$BUILD_CLONE_ROOT_WSL_OVERRIDE"
+fi
+
 DEV_DEMO_HOST="${DEV_DEMO_HOST:-yoga}"
 AWS_DEMO_HOST="${AWS_DEMO_HOST:-aws-demo}"
 DEV_DEMO_LAN_IP="${DEV_DEMO_LAN_IP:-192.168.0.104}"
+BUILD_CLONE_ROOT_WSL="${BUILD_CLONE_ROOT_WSL:-/mnt/j/deploy_remote_repo}"
 
 FAILED=0
 
@@ -104,6 +110,13 @@ if command -v uv >/dev/null 2>&1; then
   fi
 fi
 
+if [ -d "$BUILD_CLONE_ROOT_WSL" ]; then
+  pass "build clone root exists: $BUILD_CLONE_ROOT_WSL"
+else
+  warn "build clone root does not exist yet: $BUILD_CLONE_ROOT_WSL"
+  warn "Future image build scripts may create or require this directory."
+fi
+
 echo
 echo "Checking SSH targets..."
 check_ssh "$DEV_DEMO_HOST" "dev-demo"
@@ -135,6 +148,9 @@ check_remote_command \
 echo
 if [ "$FAILED" -eq 0 ]; then
   echo "All prerequisite checks passed."
+  echo
+  echo "Next step:"
+  echo "  scripts/bootstrap/setup-local-venv.sh"
   exit 0
 fi
 

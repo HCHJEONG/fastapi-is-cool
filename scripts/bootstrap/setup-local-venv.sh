@@ -109,3 +109,8 @@ mkdir -p "$MARKER_DIR"
 } > "$MARKER_FILE"
 
 echo "Local venv bootstrap completed."
+echo
+echo "Next step:"
+echo "  scripts/bootstrap/create-app-skeleton.sh"
+echo
+echo "Before building a Docker image from the clean clone, commit and push generated files such as pyproject.toml and uv.lock."

@@ -3,8 +3,6 @@ set -eu
 
 ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
 AWS_DEMO_HOST_OVERRIDE="${AWS_DEMO_HOST-}"
-AWS_DEMO_HTTP_HOST_OVERRIDE="${AWS_DEMO_HTTP_HOST-}"
-AWS_DEMO_APP_PORT_OVERRIDE="${AWS_DEMO_APP_PORT-}"
 BUILD_ARTIFACT_DIR_WSL_OVERRIDE="${BUILD_ARTIFACT_DIR_WSL-}"
 
 if [ -f "$ROOT_DIR/scripts/env/aws-demo.env" ]; then
@@ -17,30 +15,47 @@ if [ -n "$AWS_DEMO_HOST_OVERRIDE" ]; then
   AWS_DEMO_HOST="$AWS_DEMO_HOST_OVERRIDE"
 fi
 
-if [ -n "$AWS_DEMO_HTTP_HOST_OVERRIDE" ]; then
-  AWS_DEMO_HTTP_HOST="$AWS_DEMO_HTTP_HOST_OVERRIDE"
-fi
-
-if [ -n "$AWS_DEMO_APP_PORT_OVERRIDE" ]; then
-  AWS_DEMO_APP_PORT="$AWS_DEMO_APP_PORT_OVERRIDE"
-fi
-
 if [ -n "$BUILD_ARTIFACT_DIR_WSL_OVERRIDE" ]; then
   BUILD_ARTIFACT_DIR_WSL="$BUILD_ARTIFACT_DIR_WSL_OVERRIDE"
 fi
 
+usage() {
+  echo "Usage: $0 <upgrade|current|history|downgrade> [IMAGE_TAR=/path/to/image.tar]"
+  echo
+  echo "Runs Alembic in a one-off Docker container on aws-demo."
+}
+
 TARGET_ENV="${TARGET_ENV:-aws-demo}"
 TARGET_HOST="${AWS_DEMO_HOST:-aws-demo}"
-AWS_DEMO_HTTP_HOST="${AWS_DEMO_HTTP_HOST:-$TARGET_HOST}"
-AWS_DEMO_APP_PORT="${AWS_DEMO_APP_PORT:-8000}"
 SERVICE_NAME="${SERVICE_NAME:-fastapi-is-cool}"
-APP_CONTAINER="${SERVICE_NAME}-app"
 DOCKER_NETWORK="${SERVICE_NAME}-net"
 REMOTE_ROOT="/srv/${SERVICE_NAME}"
 REMOTE_ENV_DIR="${REMOTE_ROOT}/env"
 REMOTE_APP_ENV_FILE="${REMOTE_ENV_DIR}/app.env"
 REMOTE_IMAGE_DIR="${REMOTE_ROOT}/images"
 BUILD_ARTIFACT_DIR_WSL="${BUILD_ARTIFACT_DIR_WSL:-/mnt/j/deploy_remote_repo/artifacts}"
+
+command="${1:-}"
+case "$command" in
+  upgrade|current|history|downgrade)
+    ;;
+  -h|--help|"")
+    usage
+    exit 0
+    ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac
+
+if [ "$command" = "upgrade" ]; then
+  alembic_args="upgrade head"
+elif [ "$command" = "downgrade" ]; then
+  alembic_args="downgrade -1"
+else
+  alembic_args="$command"
+fi
 
 if [ "${IMAGE_TAR:-}" ]; then
   LOCAL_IMAGE_TAR="$IMAGE_TAR"
@@ -57,11 +72,10 @@ fi
 REMOTE_TMP_TAR="/tmp/$(basename "$LOCAL_IMAGE_TAR")"
 REMOTE_IMAGE_TAR="${REMOTE_IMAGE_DIR}/$(basename "$LOCAL_IMAGE_TAR")"
 
-echo "Deploying app image to aws-demo:"
+echo "Preparing image on aws-demo for Alembic:"
 echo "  host: $TARGET_HOST"
 echo "  local tar: $LOCAL_IMAGE_TAR"
-echo "  remote tar: $REMOTE_IMAGE_TAR"
-echo "  app port: $AWS_DEMO_APP_PORT"
+echo "  command: alembic $alembic_args"
 
 scp "$LOCAL_IMAGE_TAR" "$TARGET_HOST:$REMOTE_TMP_TAR"
 
@@ -69,15 +83,15 @@ ssh "$TARGET_HOST" "sudo sh -s" <<EOF
 set -eu
 
 TARGET_ENV="$TARGET_ENV"
-AWS_DEMO_APP_PORT="$AWS_DEMO_APP_PORT"
 SERVICE_NAME="$SERVICE_NAME"
-APP_CONTAINER="$APP_CONTAINER"
 DOCKER_NETWORK="$DOCKER_NETWORK"
 REMOTE_ROOT="$REMOTE_ROOT"
+REMOTE_ENV_DIR="$REMOTE_ENV_DIR"
 REMOTE_APP_ENV_FILE="$REMOTE_APP_ENV_FILE"
 REMOTE_IMAGE_DIR="$REMOTE_IMAGE_DIR"
 REMOTE_TMP_TAR="$REMOTE_TMP_TAR"
 REMOTE_IMAGE_TAR="$REMOTE_IMAGE_TAR"
+ALEMBIC_ARGS="$alembic_args"
 
 if [ "\$TARGET_ENV" != "aws-demo" ]; then
   echo "Refusing to run: TARGET_ENV must be aws-demo."
@@ -96,16 +110,6 @@ case "\$REMOTE_ROOT" in
     exit 1
     ;;
 esac
-
-if ! command -v docker >/dev/null 2>&1; then
-  echo "Error: docker is required on aws-demo."
-  exit 1
-fi
-
-if ! docker info >/dev/null 2>&1; then
-  echo "Error: docker is not available through sudo on aws-demo."
-  exit 1
-fi
 
 if [ ! -f "\$REMOTE_APP_ENV_FILE" ]; then
   echo "Error: missing app env file: \$REMOTE_APP_ENV_FILE"
@@ -132,40 +136,15 @@ if [ -z "\$IMAGE_REF" ]; then
   exit 1
 fi
 
-if docker inspect "\$APP_CONTAINER" >/dev/null 2>&1; then
-  if [ "\$(docker inspect -f '{{.State.Running}}' "\$APP_CONTAINER")" = "true" ]; then
-    docker stop "\$APP_CONTAINER"
-  fi
-
-  docker rm "\$APP_CONTAINER"
-fi
-
-docker run -d \\
-  --name "\$APP_CONTAINER" \\
-  --restart unless-stopped \\
+docker run --rm \\
   --network "\$DOCKER_NETWORK" \\
   --env-file "\$REMOTE_APP_ENV_FILE" \\
-  -p "\$AWS_DEMO_APP_PORT:8000" \\
-  "\$IMAGE_REF"
-
-echo "Waiting for app health..."
-for _ in \$(seq 1 30); do
-  if docker exec "\$APP_CONTAINER" python -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=2).read()' >/dev/null 2>&1; then
-    echo "App health check passed."
-    echo
-    echo "Deployment completed."
-    exit 0
-  fi
-
-  sleep 1
-done
-
-echo "App did not become healthy in time."
-docker logs --tail 100 "\$APP_CONTAINER" || true
-exit 1
+  "\$IMAGE_REF" \\
+  uv run alembic \$ALEMBIC_ARGS
 EOF
 
-echo
-echo "Verify from your local machine:"
-echo "  curl http://$AWS_DEMO_HTTP_HOST:$AWS_DEMO_APP_PORT/health"
-echo "  curl http://$AWS_DEMO_HTTP_HOST:$AWS_DEMO_APP_PORT/api/v1/snippets/home.hero"
+if [ "$command" = "upgrade" ]; then
+  echo
+  echo "Next step:"
+  echo "  IMAGE_TAR=\"$LOCAL_IMAGE_TAR\" scripts/aws-demo/seed-content-snippets.sh"
+fi

@@ -100,3 +100,7 @@ else
   echo "Found existing dev app env file: \$REMOTE_APP_ENV_FILE"
 fi
 EOF
+
+echo
+echo "Next step:"
+echo "  scripts/dev-demo/deploy-postgres.sh"

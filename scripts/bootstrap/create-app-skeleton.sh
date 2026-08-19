@@ -492,3 +492,12 @@ async def test_health() -> None:
 EOF
 
 echo "App skeleton creation completed."
+echo
+echo "Next steps:"
+echo "  git status --short"
+echo "  git add pyproject.toml uv.lock app alembic alembic.ini tests"
+echo "  git commit -m \"Bootstrap FastAPI baseline\""
+echo "  git push"
+echo
+echo "After the generated baseline is pushed, build the image tarball:"
+echo "  scripts/build/build-image-tar.sh"

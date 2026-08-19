@@ -146,3 +146,7 @@ done
 echo "PostgreSQL did not become ready in time."
 exit 1
 EOF
+
+echo
+echo "Next step:"
+echo "  scripts/dev-demo/alembic.sh upgrade"

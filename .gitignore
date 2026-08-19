@@ -3,6 +3,7 @@
 __pycache__/
 .pytest_cache/
 .ruff_cache/
+artifacts/
 scripts/env/*.local.env
 scripts/env/dev-demo.env
 scripts/env/aws-demo.env

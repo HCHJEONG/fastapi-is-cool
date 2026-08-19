@@ -93,3 +93,7 @@ else
   echo "Create it manually from: \$REMOTE_APP_ENV_TEMPLATE"
 fi
 EOF
+
+echo
+echo "Next step:"
+echo "  scripts/aws-demo/deploy-postgres.sh"

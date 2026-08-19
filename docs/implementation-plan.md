@@ -270,3 +270,4 @@
 - `scripts/aws-demo/alembic.sh`
 - `scripts/aws-demo/seed-content-snippets.sh`
 - `scripts/aws-demo/deploy-app.sh`
+- `scripts/aws-demo/prune-app-images.sh`

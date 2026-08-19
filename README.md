@@ -262,6 +262,14 @@ ssh aws-demo "curl -fsS http://127.0.0.1:8000/health"
 ssh aws-demo "curl -fsS http://127.0.0.1:8000/api/v1/snippets/home.hero"
 ```
 
+원격 host의 app 이미지와 tarball 정리는 별도 명시적 스크립트로 수행합니다.
+이 스크립트는 실행 중인 app image는 보존하고, PostgreSQL container는
+건드리지 않습니다.
+
+```sh
+scripts/aws-demo/prune-app-images.sh
+```
+
 ## 자주 막히는 지점
 
 ### `uv`가 Python 3.12를 못 찾는 경우

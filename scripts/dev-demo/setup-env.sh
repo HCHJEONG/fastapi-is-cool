@@ -1,9 +1,25 @@
 #!/usr/bin/env sh
 set -eu
 
-TARGET_ENV="dev-demo"
-TARGET_HOST="yoga"
-DEV_DEMO_LAN_IP="192.168.0.104"
+ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
+DEV_DEMO_HOST_OVERRIDE="${DEV_DEMO_HOST-}"
+DEV_DEMO_LAN_IP_OVERRIDE="${DEV_DEMO_LAN_IP-}"
+
+if [ -f "$ROOT_DIR/scripts/env/dev-demo.local.env" ]; then
+  . "$ROOT_DIR/scripts/env/dev-demo.local.env"
+fi
+
+if [ -n "$DEV_DEMO_HOST_OVERRIDE" ]; then
+  DEV_DEMO_HOST="$DEV_DEMO_HOST_OVERRIDE"
+fi
+
+if [ -n "$DEV_DEMO_LAN_IP_OVERRIDE" ]; then
+  DEV_DEMO_LAN_IP="$DEV_DEMO_LAN_IP_OVERRIDE"
+fi
+
+TARGET_ENV="${TARGET_ENV:-dev-demo}"
+TARGET_HOST="${DEV_DEMO_HOST:-yoga}"
+DEV_DEMO_LAN_IP="${DEV_DEMO_LAN_IP:-192.168.0.104}"
 
 SERVICE_NAME="fastapi-is-cool"
 POSTGRES_CONTAINER="${SERVICE_NAME}-postgres-dev"

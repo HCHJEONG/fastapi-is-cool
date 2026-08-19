@@ -45,6 +45,8 @@
 
 ## Manual Execution Order
 
+- Check local and remote prerequisites before running setup:
+  - `scripts/check-prereqs.sh`
 - Run local bootstrap scripts first when setting up a working clone:
   - `scripts/bootstrap/setup-local-venv.sh`
   - `scripts/bootstrap/create-app-skeleton.sh`
@@ -118,6 +120,27 @@
   bootstrap scripts should encode repeatable backend defaults.
 - The bootstrap defaults are both setup automation and an architectural
   decision record.
+
+## Prerequisites
+
+- The local machine must have Git, OpenSSH, a POSIX shell, `uv`, and Python
+  3.12 available to `uv`.
+- Windows users should run the shell scripts from WSL or another Linux-like
+  shell environment.
+- Local script target overrides may be stored in ignored files copied from:
+  - `scripts/env/dev-demo.local.env.example`
+  - `scripts/env/aws-demo.local.env.example`
+- `ssh yoga` must reach the internal `dev-demo` host by default. Callers can
+  override this with `DEV_DEMO_HOST` or `scripts/env/dev-demo.local.env`.
+- `ssh aws-demo` must reach the production-like host by default. Callers can
+  override this with `AWS_DEMO_HOST` or `scripts/env/aws-demo.local.env`.
+- `dev-demo` must have Docker installed, running, and usable by the SSH user
+  without sudo.
+- The default trusted LAN IP for `dev-demo` is `192.168.0.104`. Callers can
+  override this with `DEV_DEMO_LAN_IP` or `scripts/env/dev-demo.local.env`.
+- `aws-demo` must have Docker installed and usable through sudo.
+- Run `scripts/check-prereqs.sh` before the bootstrap and deployment scripts to
+  verify these assumptions without changing local or remote state.
 
 ## Default Backend Stack
 
@@ -201,6 +224,9 @@
 
 ## Initial Script Shape
 
+- `scripts/check-prereqs.sh`
+- `scripts/env/dev-demo.local.env.example`
+- `scripts/env/aws-demo.local.env.example`
 - `scripts/bootstrap/setup-local-venv.sh`
 - `scripts/bootstrap/create-app-skeleton.sh`
 - `scripts/dev-demo/setup-env.sh`

@@ -1,8 +1,19 @@
 #!/usr/bin/env sh
 set -eu
 
-TARGET_ENV="aws-demo"
-TARGET_HOST="aws-demo"
+ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
+AWS_DEMO_HOST_OVERRIDE="${AWS_DEMO_HOST-}"
+
+if [ -f "$ROOT_DIR/scripts/env/aws-demo.local.env" ]; then
+  . "$ROOT_DIR/scripts/env/aws-demo.local.env"
+fi
+
+if [ -n "$AWS_DEMO_HOST_OVERRIDE" ]; then
+  AWS_DEMO_HOST="$AWS_DEMO_HOST_OVERRIDE"
+fi
+
+TARGET_ENV="${TARGET_ENV:-aws-demo}"
+TARGET_HOST="${AWS_DEMO_HOST:-aws-demo}"
 
 SERVICE_NAME="fastapi-is-cool"
 POSTGRES_IMAGE="postgres:16"

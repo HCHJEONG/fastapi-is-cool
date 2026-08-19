@@ -51,9 +51,12 @@ development server target is reachable through the SSH host alias `dev-demo`.
 - The local build clone root is `J:\deploy_remote_repo`.
 - Shell scripts running from WSL should refer to that build clone root as
   `/mnt/j/deploy_remote_repo`.
-- A separate local clone may also be used as a development server workspace.
-- A PostgreSQL container may run beside that separate local clone for local
-  development, but it must be treated as a development database only.
+- A separate local clone may also be used for source preparation, local Docker
+  image builds, migrations, or seed commands.
+- Do not use a persistent local Uvicorn process as the normal development
+  server path; validate the running application on `dev-demo` through Docker.
+- A PostgreSQL container may run beside a separate local clone only as optional
+  disposable development infrastructure.
 - Export the built image to a `.tar` file locally.
 - Transfer the image tarball to the target host, such as `aws-demo` or
   `dev-demo`.
@@ -120,7 +123,7 @@ development server target is reachable through the SSH host alias `dev-demo`.
 - App deployment scripts must not stop, remove, or recreate PostgreSQL unless
   the script is explicitly dedicated to database administration.
 - Leave app deployment scripts minimal until the app skeleton, Dockerfile,
-  health endpoint, and image tag strategy are decided.
+  health endpoint, snippet endpoint, and image tag strategy are decided.
 - Future app deployment scripts should consume a prebuilt local image tarball,
   load it on the target host, replace only the app container, and verify health.
 - Clearly encode the target host in script names or target config files to

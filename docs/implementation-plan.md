@@ -31,24 +31,33 @@
 
 ## Manual Execution Order
 
-- Run local bootstrap first when setting up a working clone:
+- Run local bootstrap scripts first when setting up a working clone:
   - `scripts/bootstrap/setup-local-venv.sh`
+  - `scripts/bootstrap/create-app-skeleton.sh`
 - Prepare target environment files before creating PostgreSQL:
-  - `scripts/aws-demo/setup-env.sh`
   - `scripts/dev-demo/setup-env.sh`
+  - `scripts/aws-demo/setup-env.sh`
 - Deploy or start PostgreSQL after target env files exist:
-  - `scripts/aws-demo/deploy-postgres.sh`
   - `scripts/dev-demo/deploy-postgres.sh`
-- Deploy the FastAPI/Uvicorn app after PostgreSQL is ready:
-  - `scripts/aws-demo/deploy-app.sh`
+  - `scripts/aws-demo/deploy-postgres.sh`
+- Create the Dockerfile and app deployment behavior after the app skeleton,
+  migration, seed, health endpoint, snippet endpoint, and image tag strategy are
+  decided.
+- Build the app image locally from the separate build clone, export it as a
+  tarball, then deploy to `dev-demo` first:
   - `scripts/dev-demo/deploy-app.sh`
+- Verify the app on `dev-demo` through the deployed Docker container:
+  - `GET /health`
+  - `GET /api/v1/snippets/{key}`
+- Deploy to `aws-demo` only after `dev-demo` verification succeeds:
+  - `scripts/aws-demo/deploy-app.sh`
 - Run backup, restore, or reset scripts only as explicit database operations.
 
 ## App Deployment Script Responsibilities
 
 - Keep `scripts/aws-demo/deploy-app.sh` and
   `scripts/dev-demo/deploy-app.sh` empty until the app skeleton, Dockerfile,
-  health endpoint, and image tag strategy are decided.
+  health endpoint, snippet endpoint, and image tag strategy are decided.
 - Future app deployment scripts should require an already-built local image
   tarball.
 - Future app deployment scripts should transfer that tarball to the target
@@ -115,13 +124,15 @@
 
 ## Local Development Database
 
-- A separate local clone may be used as the development server workspace.
-- A local PostgreSQL container may run beside that separate clone.
-- Local PostgreSQL data must live outside this repository.
-- Local PostgreSQL credentials and env files must not be committed or included
-  in Docker images.
-- The local PostgreSQL instance is disposable development infrastructure, not
-  the authoritative production-like database.
+- Local scripts may prepare source files, run migrations, or seed data against a
+  configured development database.
+- Do not run a persistent local Uvicorn server as the normal validation path.
+- Use `dev-demo` as the development server target and validate the app through
+  its Docker container.
+- A separate local PostgreSQL instance may still be used only as disposable
+  development infrastructure when explicitly needed.
+- Local PostgreSQL data must live outside this repository, and local
+  credentials or env files must not be committed or included in Docker images.
 
 ## Remote Database On aws-demo
 
@@ -159,11 +170,12 @@
 ## Initial Script Shape
 
 - `scripts/bootstrap/setup-local-venv.sh`
-- `scripts/aws-demo/setup-env.sh`
-- `scripts/aws-demo/deploy-postgres.sh`
-- `scripts/aws-demo/deploy-app.sh`
-- `scripts/aws-demo/backup-postgres.sh`
+- `scripts/bootstrap/create-app-skeleton.sh`
+- `scripts/local/alembic.sh`
+- `scripts/local/seed-content-snippets.sh`
 - `scripts/dev-demo/setup-env.sh`
 - `scripts/dev-demo/deploy-postgres.sh`
 - `scripts/dev-demo/deploy-app.sh`
-- `scripts/dev-demo/reset-postgres.sh`
+- `scripts/aws-demo/setup-env.sh`
+- `scripts/aws-demo/deploy-postgres.sh`
+- `scripts/aws-demo/deploy-app.sh`

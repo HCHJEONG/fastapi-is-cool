@@ -2,6 +2,72 @@
 set -eu
 
 ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
+INCLUDE_DB=""
+
+usage() {
+  echo "Usage: $0 [--yes] [--no-db]"
+  echo
+  echo "Creates the initial FastAPI app skeleton without overwriting existing files."
+  echo
+  echo "Options:"
+  echo "  --yes    Use default choices."
+  echo "  --no-db  Skip SQLAlchemy settings/session/model/schema/service files."
+}
+
+prompt_yes_no() {
+  prompt="$1"
+  default="$2"
+
+  if [ ! -t 0 ]; then
+    echo "$default"
+    return 0
+  fi
+
+  while :; do
+    printf "%s [%s]: " "$prompt" "$default" >&2
+    read -r answer
+    answer="${answer:-$default}"
+
+    case "$answer" in
+      y|Y|yes|YES)
+        echo "yes"
+        return 0
+        ;;
+      n|N|no|NO)
+        echo "no"
+        return 0
+        ;;
+      *)
+        echo "Please answer yes or no." >&2
+        ;;
+    esac
+  done
+}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --yes)
+      INCLUDE_DB="yes"
+      ;;
+    --no-db)
+      INCLUDE_DB="no"
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      usage
+      exit 2
+      ;;
+  esac
+
+  shift
+done
+
+if [ -z "$INCLUDE_DB" ]; then
+  INCLUDE_DB="$(prompt_yes_no "Include SQLAlchemy async DB scaffold?" "yes")"
+fi
 
 create_dir() {
   mkdir -p "$ROOT_DIR/$1"
@@ -27,11 +93,17 @@ create_dir "app"
 create_dir "app/api"
 create_dir "app/api/v1"
 create_dir "app/core"
-create_dir "app/db"
-create_dir "app/models"
-create_dir "app/schemas"
-create_dir "app/services"
 create_dir "tests"
+
+if [ "$INCLUDE_DB" = "yes" ]; then
+  create_dir "alembic"
+  create_dir "alembic/versions"
+  create_dir "app/db"
+  create_dir "app/models"
+  create_dir "app/schemas"
+  create_dir "app/seeds"
+  create_dir "app/services"
+fi
 
 create_file_once "app/__init__.py" <<'EOF'
 EOF
@@ -123,6 +195,170 @@ def get_settings() -> Settings:
     return Settings()
 EOF
 
+if [ "$INCLUDE_DB" = "yes" ]; then
+create_file_once "alembic.ini" <<'EOF'
+[alembic]
+script_location = alembic
+prepend_sys_path = .
+path_separator = os
+
+sqlalchemy.url = postgresql+asyncpg://fastapi_is_cool:password@localhost:5432/fastapi_is_cool
+
+[post_write_hooks]
+
+[loggers]
+keys = root,sqlalchemy,alembic
+
+[handlers]
+keys = console
+
+[formatters]
+keys = generic
+
+[logger_root]
+level = WARNING
+handlers = console
+qualname =
+
+[logger_sqlalchemy]
+level = WARNING
+handlers =
+qualname = sqlalchemy.engine
+
+[logger_alembic]
+level = INFO
+handlers =
+qualname = alembic
+
+[handler_console]
+class = StreamHandler
+args = (sys.stderr,)
+level = NOTSET
+formatter = generic
+
+[formatter_generic]
+format = %(levelname)-5.5s [%(name)s] %(message)s
+datefmt = %H:%M:%S
+EOF
+
+create_file_once "alembic/env.py" <<'EOF'
+from logging.config import fileConfig
+
+from alembic import context
+from sqlalchemy import pool
+from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import async_engine_from_config
+
+from app import models  # noqa: F401
+from app.core.config import get_settings
+from app.db.base import Base
+
+config = context.config
+
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+settings = get_settings()
+if settings.database_url is None:
+    raise RuntimeError("DATABASE_URL is required to run Alembic migrations.")
+
+config.set_main_option("sqlalchemy.url", settings.database_url)
+target_metadata = Base.metadata
+
+
+def run_migrations_offline() -> None:
+    context.configure(
+        url=settings.database_url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def do_run_migrations(connection: Connection) -> None:
+    context.configure(connection=connection, target_metadata=target_metadata)
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_migrations_online() -> None:
+    connectable = async_engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+
+    await connectable.dispose()
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    import asyncio
+
+    asyncio.run(run_migrations_online())
+EOF
+
+create_file_once "alembic/versions/0001_create_content_snippets.py" <<'EOF'
+"""create content snippets
+
+Revision ID: 0001
+Revises:
+Create Date: 2026-08-19
+"""
+
+from collections.abc import Sequence
+
+from alembic import op
+import sqlalchemy as sa
+
+revision: str = "0001"
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
+
+
+def upgrade() -> None:
+    op.create_table(
+        "content_snippets",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("key", sa.String(length=128), nullable=False),
+        sa.Column("title", sa.String(length=255), nullable=False),
+        sa.Column("body", sa.Text(), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(
+        "ix_content_snippets_key",
+        "content_snippets",
+        ["key"],
+        unique=True,
+    )
+
+
+def downgrade() -> None:
+    op.drop_index("ix_content_snippets_key", table_name="content_snippets")
+    op.drop_table("content_snippets")
+EOF
+
 create_file_once "app/db/__init__.py" <<'EOF'
 EOF
 
@@ -211,6 +447,52 @@ class ContentSnippetRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 EOF
 
+create_file_once "app/seeds/__init__.py" <<'EOF'
+EOF
+
+create_file_once "app/seeds/content_snippets.py" <<'EOF'
+import asyncio
+
+from sqlalchemy.dialects.postgresql import insert
+
+from app.db.session import async_session_factory
+from app.models.content_snippet import ContentSnippet
+
+SEED_SNIPPETS = [
+    {
+        "key": "home.hero",
+        "title": "Home Hero",
+        "body": "FastAPI is cool.",
+    },
+]
+
+
+async def main() -> None:
+    if async_session_factory is None:
+        raise RuntimeError("DATABASE_URL is not configured.")
+
+    async with async_session_factory() as session:
+        for item in SEED_SNIPPETS:
+            stmt = (
+                insert(ContentSnippet)
+                .values(**item)
+                .on_conflict_do_update(
+                    index_elements=[ContentSnippet.key],
+                    set_={
+                        "title": item["title"],
+                        "body": item["body"],
+                    },
+                )
+            )
+            await session.execute(stmt)
+
+        await session.commit()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+EOF
+
 create_file_once "app/services/__init__.py" <<'EOF'
 EOF
 
@@ -230,6 +512,7 @@ async def get_content_snippet_by_key(
     )
     return result.scalar_one_or_none()
 EOF
+fi
 
 create_file_once "tests/test_health.py" <<'EOF'
 from httpx import ASGITransport, AsyncClient

@@ -6,11 +6,15 @@ DEV_DEMO_HOST_OVERRIDE="${DEV_DEMO_HOST-}"
 AWS_DEMO_HOST_OVERRIDE="${AWS_DEMO_HOST-}"
 DEV_DEMO_LAN_IP_OVERRIDE="${DEV_DEMO_LAN_IP-}"
 
-if [ -f "$ROOT_DIR/scripts/env/dev-demo.local.env" ]; then
+if [ -f "$ROOT_DIR/scripts/env/dev-demo.env" ]; then
+  . "$ROOT_DIR/scripts/env/dev-demo.env"
+elif [ -f "$ROOT_DIR/scripts/env/dev-demo.local.env" ]; then
   . "$ROOT_DIR/scripts/env/dev-demo.local.env"
 fi
 
-if [ -f "$ROOT_DIR/scripts/env/aws-demo.local.env" ]; then
+if [ -f "$ROOT_DIR/scripts/env/aws-demo.env" ]; then
+  . "$ROOT_DIR/scripts/env/aws-demo.env"
+elif [ -f "$ROOT_DIR/scripts/env/aws-demo.local.env" ]; then
   . "$ROOT_DIR/scripts/env/aws-demo.local.env"
 fi
 

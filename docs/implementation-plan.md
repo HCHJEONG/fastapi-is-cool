@@ -62,9 +62,10 @@
   container is ready:
   - `scripts/dev-demo/alembic.sh upgrade`
   - `scripts/dev-demo/seed-content-snippets.sh`
-- Create the Dockerfile and app deployment behavior after the app skeleton,
-  health endpoint, snippet endpoint, migration/seed behavior, and image tag
-  strategy are decided.
+- Use the root `Dockerfile` after the app skeleton has generated
+  `pyproject.toml`, `uv.lock`, `app/`, `alembic/`, and `alembic.ini`.
+- Create the app deployment behavior after the health endpoint, snippet
+  endpoint, migration/seed behavior, and image tag strategy are decided.
 - Build the app image locally from the separate build clone, export it as a
   tarball, then deploy to `dev-demo` first:
   - `scripts/dev-demo/deploy-app.sh`
@@ -78,8 +79,8 @@
 ## App Deployment Script Responsibilities
 
 - Keep `scripts/aws-demo/deploy-app.sh` and
-  `scripts/dev-demo/deploy-app.sh` empty until the app skeleton, Dockerfile,
-  health endpoint, snippet endpoint, and image tag strategy are decided.
+  `scripts/dev-demo/deploy-app.sh` empty until the app skeleton, health
+  endpoint, snippet endpoint, and image tag strategy are decided.
 - Future app deployment scripts should require an already-built local image
   tarball.
 - Future app deployment scripts should transfer that tarball to the target
@@ -131,13 +132,16 @@
   - `scripts/env/dev-demo.local.env.example`
   - `scripts/env/aws-demo.local.env.example`
 - `ssh yoga` must reach the internal `dev-demo` host by default. Callers can
-  override this with `DEV_DEMO_HOST` or `scripts/env/dev-demo.local.env`.
+  override this with `DEV_DEMO_HOST`, `scripts/env/dev-demo.env`, or
+  `scripts/env/dev-demo.local.env`.
 - `ssh aws-demo` must reach the production-like host by default. Callers can
-  override this with `AWS_DEMO_HOST` or `scripts/env/aws-demo.local.env`.
+  override this with `AWS_DEMO_HOST`, `scripts/env/aws-demo.env`, or
+  `scripts/env/aws-demo.local.env`.
 - `dev-demo` must have Docker installed, running, and usable by the SSH user
   without sudo.
 - The default trusted LAN IP for `dev-demo` is `192.168.0.104`. Callers can
-  override this with `DEV_DEMO_LAN_IP` or `scripts/env/dev-demo.local.env`.
+  override this with `DEV_DEMO_LAN_IP`, `scripts/env/dev-demo.env`, or
+  `scripts/env/dev-demo.local.env`.
 - `aws-demo` must have Docker installed and usable through sudo.
 - Run `scripts/check-prereqs.sh` before the bootstrap and deployment scripts to
   verify these assumptions without changing local or remote state.
@@ -227,6 +231,8 @@
 - `scripts/check-prereqs.sh`
 - `scripts/env/dev-demo.local.env.example`
 - `scripts/env/aws-demo.local.env.example`
+- `Dockerfile`
+- `.dockerignore`
 - `scripts/bootstrap/setup-local-venv.sh`
 - `scripts/bootstrap/create-app-skeleton.sh`
 - `scripts/dev-demo/setup-env.sh`

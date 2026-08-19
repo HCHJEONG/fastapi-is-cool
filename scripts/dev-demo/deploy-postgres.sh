@@ -5,7 +5,9 @@ ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
 DEV_DEMO_HOST_OVERRIDE="${DEV_DEMO_HOST-}"
 DEV_DEMO_LAN_IP_OVERRIDE="${DEV_DEMO_LAN_IP-}"
 
-if [ -f "$ROOT_DIR/scripts/env/dev-demo.local.env" ]; then
+if [ -f "$ROOT_DIR/scripts/env/dev-demo.env" ]; then
+  . "$ROOT_DIR/scripts/env/dev-demo.env"
+elif [ -f "$ROOT_DIR/scripts/env/dev-demo.local.env" ]; then
   . "$ROOT_DIR/scripts/env/dev-demo.local.env"
 fi
 

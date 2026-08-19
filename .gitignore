@@ -4,6 +4,8 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 artifacts/
+scripts/openapi/*
+!scripts/openapi/.gitkeep
 scripts/env/*.local.env
 scripts/env/dev-demo.env
 scripts/env/aws-demo.env

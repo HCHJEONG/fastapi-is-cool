@@ -173,6 +173,13 @@ curl http://192.168.0.104:8000/health
 curl http://192.168.0.104:8000/api/v1/snippets/home.hero
 ```
 
+OpenAPI 명세 파일이 필요하면 실행 중인 FastAPI 앱에서 export합니다.
+생성된 `scripts/openapi/openapi.json`은 git에 포함하지 않습니다.
+
+```sh
+OPENAPI_URL="http://192.168.0.104:8000/openapi.json" scripts/export-openapi.sh
+```
+
 기대 응답 예:
 
 ```json

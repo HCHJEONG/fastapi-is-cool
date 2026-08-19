@@ -20,7 +20,7 @@ if [ -n "$BUILD_ARTIFACT_DIR_WSL_OVERRIDE" ]; then
 fi
 
 usage() {
-  echo "Usage: $0 <upgrade|current|history|downgrade> [IMAGE_TAR=/path/to/image.tar]"
+  echo "Usage: IMAGE_TAR=/path/to/image.tar $0 <upgrade|current|history|downgrade>"
   echo
   echo "Runs Alembic in a one-off Docker container on aws-demo."
 }

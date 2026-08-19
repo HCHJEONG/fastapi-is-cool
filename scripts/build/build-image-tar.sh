@@ -148,5 +148,5 @@ echo
 echo "Next step:"
 echo "  IMAGE_TAR=\"$TAR_FILE\" scripts/dev-demo/deploy-app.sh"
 echo
-echo "If you are deploying from outside the trusted LAN, you may skip dev-demo app deployment and continue with:"
+echo "If you are deploying from outside the trusted LAN, you may skip the dev-demo path and continue with:"
 echo "  scripts/aws-demo/setup-env.sh"

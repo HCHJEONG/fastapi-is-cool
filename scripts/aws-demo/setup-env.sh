@@ -95,5 +95,7 @@ fi
 EOF
 
 echo
-echo "Next step:"
+echo "Next step after the required aws-demo env files exist:"
 echo "  scripts/aws-demo/deploy-postgres.sh"
+echo
+echo "If app.env or postgres.env was reported missing, create it manually from the remote example files first."

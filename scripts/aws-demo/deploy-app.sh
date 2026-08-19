@@ -166,6 +166,6 @@ exit 1
 EOF
 
 echo
-echo "Verify from your local machine:"
-echo "  curl http://$AWS_DEMO_HTTP_HOST:$AWS_DEMO_APP_PORT/health"
-echo "  curl http://$AWS_DEMO_HTTP_HOST:$AWS_DEMO_APP_PORT/api/v1/snippets/home.hero"
+echo "Verify on aws-demo through SSH:"
+echo "  ssh $TARGET_HOST \"curl -fsS http://127.0.0.1:$AWS_DEMO_APP_PORT/health\""
+echo "  ssh $TARGET_HOST \"curl -fsS http://127.0.0.1:$AWS_DEMO_APP_PORT/api/v1/snippets/home.hero\""

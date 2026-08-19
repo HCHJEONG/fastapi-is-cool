@@ -193,8 +193,17 @@ snippet 응답은 timestamp를 포함합니다.
 
 ## 내부망 밖에서 작업하는 경우
 
-공유기 내부망 밖에서 배포를 진행한다면 `scripts/dev-demo/deploy-app.sh`는
-건너뛸 수 있습니다.
+공유기 내부망 밖에서 배포를 진행한다면 dev-demo 경로 전체를 건너뛸 수
+있습니다. dev-demo의 PostgreSQL은 내부망 접근을 전제로 하므로,
+내부망 밖에서는 다음 스크립트들을 실행하지 않는 편이 자연스럽습니다.
+
+```sh
+scripts/dev-demo/setup-env.sh
+scripts/dev-demo/deploy-postgres.sh
+scripts/dev-demo/alembic.sh upgrade
+scripts/dev-demo/seed-content-snippets.sh
+scripts/dev-demo/deploy-app.sh
+```
 
 이 경우에도 image tarball은 먼저 빌드합니다.
 
@@ -231,11 +240,12 @@ aws-demo app 배포는 다음을 수행합니다.
 - `/health` 확인
 - 마지막에 `curl` 검증 명령 출력
 
-성공 후 기대 검증:
+성공 후 기본 검증은 aws-demo 인스턴스 안에서 `localhost`로 확인하는
+방식입니다. 외부에서 8000 포트를 열지 않아도 이 검증은 가능합니다.
 
 ```sh
-curl http://aws-demo:8000/health
-curl http://aws-demo:8000/api/v1/snippets/home.hero
+ssh aws-demo "curl -fsS http://127.0.0.1:8000/health"
+ssh aws-demo "curl -fsS http://127.0.0.1:8000/api/v1/snippets/home.hero"
 ```
 
 ## 자주 막히는 지점
@@ -269,11 +279,11 @@ secret을 자동 생성하지 않습니다. 원격 host에서 example 파일을 
 
 ## 최종 성공 기준
 
-최종 성공 기준은 aws-demo에 대해 curl을 실행했을 때 JSON 응답이 찍히는
-것입니다.
+최종 성공 기준은 aws-demo 인스턴스에서 app container가 응답하고,
+aws-demo 내부 `localhost` 기준 curl에서 JSON 응답이 찍히는 것입니다.
 
 ```sh
-curl http://aws-demo:8000/health
+ssh aws-demo "curl -fsS http://127.0.0.1:8000/health"
 ```
 
 ```json
@@ -283,7 +293,7 @@ curl http://aws-demo:8000/health
 그리고 seed된 snippet이 조회되어야 합니다.
 
 ```sh
-curl http://aws-demo:8000/api/v1/snippets/home.hero
+ssh aws-demo "curl -fsS http://127.0.0.1:8000/api/v1/snippets/home.hero"
 ```
 
 여기까지 되면 baseline backend 배포 경로는 완성된 것입니다. 그 다음부터

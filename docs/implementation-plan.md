@@ -82,9 +82,8 @@
   tarball, then deploy to `dev-demo` first:
   - `scripts/build/build-image-tar.sh`
   - `scripts/dev-demo/deploy-app.sh`
-- When deploying from outside the trusted LAN, operators may skip
-  `scripts/dev-demo/deploy-app.sh` after the image tarball is built and proceed
-  directly to `scripts/aws-demo/setup-env.sh`.
+- When deploying from outside the trusted LAN, operators may skip the dev-demo
+  path and proceed directly to the image build and aws-demo path.
 - Verify the app on `dev-demo` through the deployed Docker container:
   - `GET /health`
   - `GET /api/v1/snippets/{key}`
@@ -100,7 +99,7 @@
   replace only the dev app container, verify `/health`, and print curl commands.
 - `scripts/aws-demo/deploy-app.sh` should deploy a prebuilt image tarball with
   sudo Docker, replace only the aws app container, verify `/health`, and print
-  curl commands.
+  SSH-based localhost curl commands.
 - Future app deployment scripts should require an already-built local image
   tarball.
 - Future app deployment scripts should transfer that tarball to the target

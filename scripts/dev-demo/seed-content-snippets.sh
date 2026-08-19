@@ -47,4 +47,4 @@ echo "Next step:"
 echo "  scripts/build/build-image-tar.sh"
 echo
 echo "After the image tarball is built, deploy to dev-demo if you are on the trusted LAN."
-echo "If you are outside the trusted LAN, you may skip scripts/dev-demo/deploy-app.sh and continue with scripts/aws-demo/setup-env.sh."
+echo "If you are outside the trusted LAN, skip the dev-demo path and continue with scripts/aws-demo/setup-env.sh after building the image tarball."

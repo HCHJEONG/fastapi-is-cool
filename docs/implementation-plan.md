@@ -25,6 +25,33 @@
   environment.
 - Runtime hosts such as `aws-demo` and `dev-demo` should not manage Python
   dependencies directly.
+- Because FastAPI does not provide an official `create-next-app`-style starter,
+  bootstrap scripts should encode repeatable backend defaults.
+- The bootstrap defaults are both setup automation and an architectural
+  decision record.
+
+## Default Backend Stack
+
+- Use FastAPI and Uvicorn for the API runtime.
+- Use Pydantic Settings for environment-driven configuration.
+- Use PostgreSQL as the default database.
+- Use SQLAlchemy async as the default ORM/database layer.
+- Use asyncpg as the PostgreSQL driver.
+- Use Alembic for database migrations.
+- Use pytest, pytest-asyncio, and httpx for tests.
+- Use Ruff for linting and formatting.
+
+## Authentication And Logging
+
+- Prefer bearer-token authentication as the default API authentication shape.
+- Keep the exact identity provider, OAuth flow, JWT issuer, or session strategy
+  configurable until the sibling applications require a specific integration.
+- Include authentication dependencies only when the first protected endpoint or
+  token validation path is implemented.
+- Start with standard-library `logging`.
+- Prefer structured, request-aware application logs that include fields such as
+  timestamp, level, request id, route, status code, and elapsed time.
+- Defer heavier logging frameworks until there is a concrete need.
 
 ## Local Development Database
 

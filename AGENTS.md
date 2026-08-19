@@ -26,6 +26,18 @@ development server target is reachable through the SSH host alias `dev-demo`.
   environment.
 - Runtime hosts such as `aws-demo` and `dev-demo` should not manage Python
   dependencies directly.
+- Default backend stack decisions should be encoded in bootstrap-generated
+  project files where practical, because FastAPI does not provide a single
+  official starter equivalent to `create-next-app`.
+- Prefer async FastAPI with SQLAlchemy async, asyncpg, Alembic,
+  Pydantic Settings, pytest/httpx/pytest-asyncio, and Ruff as the default
+  Python backend shape.
+- Prefer bearer-token authentication as the default API authentication shape.
+  Keep the exact identity provider, OAuth flow, or token issuer configurable
+  until real clients require a specific integration.
+- Prefer standard-library `logging` with structured, request-aware log records
+  as the initial logging baseline. Add heavier logging frameworks only when
+  the application has a concrete need for them.
 
 ## Deployment Rules
 
